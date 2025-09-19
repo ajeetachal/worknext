@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkNest - Modern Task Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7c3aed',
+                        secondary: '#a855f7',
+                        accent: '#f59e0b',
+                        royal: '#4c1d95',
+                        gold: '#d97706',
+                        platinum: '#e5e7eb',
+                        dark: '#1e1b4b',
+                        'dark-light': '#312e81',
+                        'royal-light': '#8b5cf6',
+                        'gold-light': '#fbbf24'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #a855f7 100%);
+        }
+        
+        .royal-gradient {
+            background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #7c3aed 100%);
+        }
+        
+        .gold-gradient {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
+        }
+        
+        .premium-card {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+        }
+        
+        .dark .premium-card {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .task-status-pending { border-left: 4px solid #f59e0b; }
+        .task-status-progress { border-left: 4px solid #3b82f6; }
+        .task-status-completed { border-left: 4px solid #10b981; }
+        
+        .calendar-day {
+            min-height: 100px;
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-day:hover {
+            background-color: #f8fafc;
+        }
+        
+        .dark .calendar-day:hover {
+            background-color: #374151;
+        }
+        
+        .task-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        
+        .task-dot.pending { background-color: #f59e0b; }
+        .task-dot.progress { background-color: #3b82f6; }
+        .task-dot.completed { background-color: #10b981; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-purple-50 dark:bg-gradient-to-br dark:from-dark dark:to-dark-light transition-colors duration-300">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center gradient-bg">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">WorkNest</h1>
+                <p class="text-gray-600 dark:text-gray-300">Modern Task Management</p>
+            </div>
+            
+            <div class="space-y-4">
+                <button onclick="login('manager')" class="w-full royal-gradient hover:opacity-90 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    <i class="fas fa-crown mr-2"></i>Login as Manager
+                </button>
+                <button onclick="showEmployeeLogin()" class="w-full gold-gradient hover:opacity-90 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    <i class="fas fa-user mr-2"></i>Login as Employee
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Login Modal -->
+    <div id="employeeLoginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Employee Login</h2>
+                <p class="text-gray-600 dark:text-gray-300">Select your name and enter passcode</p>
+            </div>
+            
+            <form onsubmit="employeeLogin(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Employee</label>
+                        <select id="employeeSelect" required class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Choose your name</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Passcode</label>
+                        <input type="password" id="employeePasscode" required maxlength="4" placeholder="Enter 4-digit passcode" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-center text-lg tracking-widest">
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center mt-6">
+                    <button type="button" onclick="hideEmployeeLogin()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                    <button type="submit" class="bg-secondary hover:bg-secondary/90 text-white px-6 py-3 rounded-xl font-medium transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden min-h-screen flex">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white dark:bg-dark shadow-2xl border-r border-royal/20 dark:border-royal-light/30">
+            <div class="p-6 border-b border-royal/20 dark:border-royal-light/30 royal-gradient">
+                <h1 class="text-2xl font-bold text-white mb-1">👑 WorkNest</h1>
+                <p class="text-sm text-gold-light" id="userRole">Manager Dashboard</p>
+            </div>
+            
+            <nav class="mt-6">
+                <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center px-6 py-3 text-gray-700 dark:text-platinum hover:bg-royal/10 dark:hover:bg-royal-light/20 transition-all duration-300 hover:border-r-4 hover:border-gold">
+                    <i class="fas fa-home mr-3 text-royal dark:text-royal-light"></i>Dashboard
+                </a>
+                <a href="#" onclick="showSection('calendar')" class="nav-item flex items-center px-6 py-3 text-gray-700 dark:text-platinum hover:bg-royal/10 dark:hover:bg-royal-light/20 transition-all duration-300 hover:border-r-4 hover:border-gold">
+                    <i class="fas fa-calendar mr-3 text-royal dark:text-royal-light"></i>Calendar
+                </a>
+                <a href="#" onclick="showSection('employees')" id="employeesNav" class="nav-item flex items-center px-6 py-3 text-gray-700 dark:text-platinum hover:bg-royal/10 dark:hover:bg-royal-light/20 transition-all duration-300 hover:border-r-4 hover:border-gold">
+                    <i class="fas fa-users mr-3 text-royal dark:text-royal-light"></i>Employees
+                </a>
+                <a href="#" onclick="showSection('tasks')" class="nav-item flex items-center px-6 py-3 text-gray-700 dark:text-platinum hover:bg-royal/10 dark:hover:bg-royal-light/20 transition-all duration-300 hover:border-r-4 hover:border-gold">
+                    <i class="fas fa-tasks mr-3 text-royal dark:text-royal-light"></i>Tasks
+                </a>
+                <a href="#" onclick="showSection('messages')" class="nav-item flex items-center px-6 py-3 text-gray-700 dark:text-platinum hover:bg-royal/10 dark:hover:bg-royal-light/20 transition-all duration-300 hover:border-r-4 hover:border-gold">
+                    <i class="fas fa-comments mr-3 text-royal dark:text-royal-light"></i>Messages
+                    <span id="messagesBadge" class="ml-auto bg-gold text-white text-xs px-2 py-1 rounded-full notification-badge hidden shadow-lg">0</span>
+                </a>
+                <a href="#" onclick="showSection('notifications')" class="nav-item flex items-center px-6 py-3 text-gray-700 dark:text-platinum hover:bg-royal/10 dark:hover:bg-royal-light/20 transition-all duration-300 hover:border-r-4 hover:border-gold">
+                    <i class="fas fa-bell mr-3 text-royal dark:text-royal-light"></i>Notifications
+                    <span id="notificationBadge" class="ml-auto bg-gold text-white text-xs px-2 py-1 rounded-full notification-badge hidden shadow-lg">0</span>
+                </a>
+            </nav>
+            
+            <div class="absolute bottom-6 left-6 right-6">
+                <button onclick="toggleDarkMode()" class="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-moon mr-2 dark:hidden"></i>
+                    <i class="fas fa-sun mr-2 hidden dark:inline"></i>
+                    <span class="dark:hidden">Dark Mode</span>
+                    <span class="hidden dark:inline">Light Mode</span>
+                </button>
+                <button onclick="logout()" class="w-full mt-2 flex items-center justify-center px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+                <div class="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                    <p>Developed by <span class="font-medium">Ajeet Achal</span></p>
+                    <p>Powered by <span class="font-medium">TechyNexus</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-white dark:bg-dark shadow-lg border-b border-royal/20 dark:border-royal-light/30 p-6 premium-card">
+                <div class="flex items-center justify-between">
+                    <h2 id="pageTitle" class="text-2xl font-bold text-royal dark:text-royal-light">Dashboard</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-600 dark:text-platinum bg-royal/10 dark:bg-royal-light/20 px-3 py-1 rounded-lg">
+                            <span id="currentDate"></span>
+                        </div>
+                        <div class="w-10 h-10 gold-gradient rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-crown text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Employee Profile Section -->
+            <div id="profileSection" class="hidden p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+                    <div class="flex items-center space-x-6">
+                        <div class="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-2xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white" id="employeeProfileName">Employee Name</h2>
+                            <p class="text-gray-600 dark:text-gray-400" id="employeeProfileEmail">employee@company.com</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500" id="employeeProfileDepartment">Department</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 dark:text-gray-500">Employee ID</p>
+                            <p class="font-medium text-gray-800 dark:text-white" id="employeeProfileId">#001</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Analytics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm card-hover">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-tasks text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800 dark:text-white" id="empTotalTasks">0</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Tasks</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm card-hover">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800 dark:text-white" id="empCompletedTasks">0</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm card-hover">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-clock text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800 dark:text-white" id="empPendingTasks">0</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm card-hover">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-exchange-alt text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800 dark:text-white" id="empTransferredTasks">0</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Transferred</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm card-hover">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-times-circle text-red-600 dark:text-red-400"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800 dark:text-white" id="empFailedTasks">0</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Failed</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Completion Analytics -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Task Completion Analytics</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                            <div class="text-3xl font-bold text-green-600 dark:text-green-400" id="onTimeTasks">0</div>
+                            <p class="text-sm text-green-700 dark:text-green-300 mt-1">Completed On Time</p>
+                        </div>
+                        <div class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                            <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400" id="extendedTasks">0</div>
+                            <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">Extended Time</p>
+                        </div>
+                        <div class="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                            <div class="text-3xl font-bold text-red-600 dark:text-red-400" id="overdueTasks">0</div>
+                            <p class="text-sm text-red-700 dark:text-red-300 mt-1">After Final Deadline</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="p-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white dark:bg-dark p-6 rounded-xl shadow-lg card-hover premium-card border-l-4 border-royal">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-platinum">Total Tasks</p>
+                                <p class="text-3xl font-bold text-royal dark:text-royal-light" id="totalTasks">0</p>
+                            </div>
+                            <div class="w-14 h-14 bg-royal/20 dark:bg-royal-light/30 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-tasks text-royal dark:text-royal-light text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-dark p-6 rounded-xl shadow-lg card-hover premium-card border-l-4 border-gold">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-platinum">In Progress</p>
+                                <p class="text-3xl font-bold text-gold dark:text-gold-light" id="inProgressTasks">0</p>
+                            </div>
+                            <div class="w-14 h-14 bg-gold/20 dark:bg-gold-light/30 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-clock text-gold dark:text-gold-light text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-dark p-6 rounded-xl shadow-lg card-hover premium-card border-l-4 border-green-600">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-platinum">Completed</p>
+                                <p class="text-3xl font-bold text-green-600 dark:text-green-400" id="completedTasks">0</p>
+                            </div>
+                            <div class="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-dark p-6 rounded-xl shadow-lg card-hover premium-card border-l-4 border-secondary">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-platinum">Employees</p>
+                                <p class="text-3xl font-bold text-secondary dark:text-secondary" id="totalEmployees">0</p>
+                            </div>
+                            <div class="w-14 h-14 bg-secondary/20 dark:bg-secondary/30 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-users text-secondary dark:text-secondary text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Tasks -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Tasks</h3>
+                        <button onclick="showSection('tasks')" class="text-primary hover:text-primary/80 text-sm font-medium">View All</button>
+                    </div>
+                    <div id="recentTasksList" class="space-y-4">
+                        <!-- Recent tasks will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Section -->
+            <div id="calendarSection" class="hidden p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Task Calendar</h3>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="previousMonth()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                                <i class="fas fa-chevron-left text-gray-600 dark:text-gray-400"></i>
+                            </button>
+                            <span id="currentMonth" class="text-lg font-medium text-gray-800 dark:text-white"></span>
+                            <button onclick="nextMonth()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                                <i class="fas fa-chevron-right text-gray-600 dark:text-gray-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-7 gap-1 mb-4">
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Sun</div>
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Mon</div>
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Tue</div>
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Wed</div>
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Thu</div>
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Fri</div>
+                        <div class="p-3 text-center text-sm font-medium text-gray-600 dark:text-gray-400">Sat</div>
+                    </div>
+                    
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                        <!-- Calendar days will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employees Section -->
+            <div id="employeesSection" class="hidden p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Employee Management</h3>
+                    <button onclick="showAddEmployeeModal()" class="royal-gradient hover:opacity-90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        <i class="fas fa-plus mr-2"></i>Add Employee
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="employeesList">
+                    <!-- Employees will be populated here -->
+                </div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div id="tasksSection" class="hidden p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Task Management</h3>
+                    <div class="flex items-center space-x-4">
+                        <select id="taskFilter" onchange="filterTasks()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            <option value="all">All Tasks</option>
+                            <option value="pending">Pending</option>
+                            <option value="progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <button onclick="showAddTaskModal()" id="addTaskBtn" class="royal-gradient hover:opacity-90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                            <i class="fas fa-plus mr-2"></i>Add Task
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                    <div id="tasksList" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Tasks will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Section -->
+            <div id="messagesSection" class="hidden p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                    <!-- Conversations List -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Messages</h3>
+                                <button onclick="showNewMessageModal()" id="newMessageBtn" class="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-lg text-sm">
+                                    <i class="fas fa-plus mr-1"></i>New
+                                </button>
+                            </div>
+                        </div>
+                        <div id="conversationsList" class="max-h-96 overflow-y-auto">
+                            <!-- Conversations will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Area -->
+                    <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm flex flex-col">
+                        <div id="chatHeader" class="p-4 border-b border-gray-200 dark:border-gray-700 hidden">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800 dark:text-white" id="chatWithName">Select a conversation</h4>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400" id="chatWithRole">Role</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="chatMessages" class="flex-1 p-4 overflow-y-auto max-h-96 min-h-64">
+                            <div class="text-center text-gray-500 dark:text-gray-400 mt-20">
+                                <i class="fas fa-comments text-4xl mb-4"></i>
+                                <p>Select a conversation to start messaging</p>
+                            </div>
+                        </div>
+                        
+                        <div id="chatInput" class="p-4 border-t border-gray-200 dark:border-gray-700 hidden">
+                            <form onsubmit="sendMessage(event)" class="flex space-x-3">
+                                <input type="text" id="messageInput" placeholder="Type your message..." class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Section -->
+            <div id="notificationsSection" class="hidden p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Notifications</h3>
+                    <div id="notificationsList" class="space-y-4">
+                        <!-- Notifications will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div id="addEmployeeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Add New Employee</h3>
+                <button onclick="hideAddEmployeeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="addEmployee(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                        <input type="text" id="employeeName" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                        <input type="email" id="employeeEmail" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                        <select id="employeeDepartment" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select Department</option>
+                            <option value="Development">Development</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="HR">HR</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Passcode (4 digits)</label>
+                        <input type="password" id="employeePasscodeSet" maxlength="4" value="1234" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-center tracking-widest">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Default: 1234 (can be changed later)</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideAddEmployeeModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors">Add Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Add New Task</h3>
+                <button onclick="hideAddTaskModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="addTask(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+                        <input type="text" id="taskTitle" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                        <textarea id="taskDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign to</label>
+                        <select id="taskAssignee" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select Employee</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Work Type</label>
+                        <select id="taskType" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select Type</option>
+                            <option value="Development">Development</option>
+                            <option value="Design">Design</option>
+                            <option value="Research">Research</option>
+                            <option value="Testing">Testing</option>
+                            <option value="Documentation">Documentation</option>
+                            <option value="Meeting">Meeting</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deadline</label>
+                        <input type="date" id="taskDeadline" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideAddTaskModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Employee Modal -->
+    <div id="editEmployeeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Edit Employee</h3>
+                <button onclick="hideEditEmployeeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="updateEmployee(event)">
+                <input type="hidden" id="editEmployeeId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                        <input type="text" id="editEmployeeName" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                        <input type="email" id="editEmployeeEmail" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                        <select id="editEmployeeDepartment" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select Department</option>
+                            <option value="Development">Development</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="HR">HR</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Passcode (4 digits)</label>
+                        <input type="password" id="editEmployeePasscode" maxlength="4" placeholder="Enter new passcode" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-center tracking-widest">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave empty to keep current passcode</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideEditEmployeeModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors">Update Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- New Message Modal -->
+    <div id="newMessageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">New Message</h3>
+                <button onclick="hideNewMessageModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="startNewConversation(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Send to</label>
+                        <select id="messageRecipient" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select recipient</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message</label>
+                        <textarea id="newMessageText" rows="4" required placeholder="Type your message..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideNewMessageModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors">Send Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let employees = [];
+        let tasks = [];
+        let notifications = [];
+        let messages = [];
+        let conversations = [];
+        let currentConversation = null;
+        let currentDate = new Date();
+        let currentView = 'dashboard';
+
+        // Initialize Application
+        function init() {
+            updateCurrentDate();
+            loadSampleData();
+            
+            // Set minimum date for task deadline to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('taskDeadline').min = today;
+        }
+
+        // Authentication
+        function login(role) {
+            currentUser = { role: role };
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Update UI based on role
+            if (role === 'employee') {
+                document.getElementById('userRole').textContent = 'Employee Dashboard';
+                document.getElementById('employeesNav').classList.add('hidden');
+                document.getElementById('addTaskBtn').classList.add('hidden');
+                document.getElementById('newMessageBtn').classList.add('hidden');
+                // Show profile section for employees
+                showSection('profile');
+                updateEmployeeProfile();
+            } else {
+                document.getElementById('userRole').textContent = 'Manager Dashboard';
+                document.getElementById('employeesNav').classList.remove('hidden');
+                document.getElementById('addTaskBtn').classList.remove('hidden');
+                document.getElementById('newMessageBtn').classList.remove('hidden');
+                showSection('dashboard');
+            }
+            
+            updateDashboard();
+            renderCalendar();
+            updateMessageRecipients();
+        }
+
+        function showEmployeeLogin() {
+            updateEmployeeLoginOptions();
+            document.getElementById('employeeLoginModal').classList.remove('hidden');
+        }
+
+        function hideEmployeeLogin() {
+            document.getElementById('employeeLoginModal').classList.add('hidden');
+            document.getElementById('employeeSelect').value = '';
+            document.getElementById('employeePasscode').value = '';
+        }
+
+        function updateEmployeeLoginOptions() {
+            const select = document.getElementById('employeeSelect');
+            select.innerHTML = '<option value="">Choose your name</option>' + 
+                employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
+        }
+
+        function employeeLogin(event) {
+            event.preventDefault();
+            
+            const employeeId = parseInt(document.getElementById('employeeSelect').value);
+            const passcode = document.getElementById('employeePasscode').value;
+            
+            const employee = employees.find(e => e.id === employeeId);
+            
+            if (!employee) {
+                alert('Please select an employee');
+                return;
+            }
+            
+            if (employee.passcode !== passcode) {
+                alert('Invalid passcode');
+                return;
+            }
+            
+            currentUser = { 
+                role: 'employee', 
+                id: employeeId, 
+                name: employee.name,
+                email: employee.email,
+                department: employee.department
+            };
+            
+            hideEmployeeLogin();
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Update UI for employee
+            document.getElementById('userRole').textContent = `${employee.name} - Employee`;
+            document.getElementById('employeesNav').classList.add('hidden');
+            document.getElementById('addTaskBtn').classList.add('hidden');
+            document.getElementById('newMessageBtn').classList.add('hidden');
+            
+            showSection('profile');
+            updateEmployeeProfile();
+            updateDashboard();
+            renderCalendar();
+            updateMessageRecipients();
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            showSection('dashboard');
+        }
+
+        // Navigation
+        function showSection(section) {
+            // Hide all sections
+            const sections = ['dashboard', 'calendar', 'employees', 'tasks', 'messages', 'notifications', 'profile'];
+            sections.forEach(s => {
+                document.getElementById(s + 'Section').classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(section + 'Section').classList.remove('hidden');
+            
+            // Update page title
+            const titles = {
+                dashboard: 'Dashboard',
+                calendar: 'Calendar',
+                employees: 'Employees',
+                tasks: 'Tasks',
+                messages: 'Messages',
+                notifications: 'Notifications',
+                profile: 'Profile'
+            };
+            document.getElementById('pageTitle').textContent = titles[section];
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('bg-primary', 'text-white');
+                item.classList.add('text-gray-700', 'dark:text-gray-300');
+            });
+            if (event && event.target) {
+                event.target.classList.add('bg-primary', 'text-white');
+                event.target.classList.remove('text-gray-700', 'dark:text-gray-300');
+            }
+            
+            currentView = section;
+            
+            // Refresh content based on section
+            if (section === 'employees') {
+                renderEmployees();
+            } else if (section === 'tasks') {
+                renderTasks();
+            } else if (section === 'messages') {
+                renderConversations();
+            } else if (section === 'notifications') {
+                renderNotifications();
+            } else if (section === 'calendar') {
+                renderCalendar();
+            } else if (section === 'profile') {
+                updateEmployeeProfile();
+            }
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Date Functions
+        function updateCurrentDate() {
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', options);
+        }
+
+        // Sample Data
+        function loadSampleData() {
+            employees = [
+                { id: 1, name: 'Sarah Johnson', email: 'sarah@company.com', department: 'Development', passcode: '1234' },
+                { id: 2, name: 'Mike Chen', email: 'mike@company.com', department: 'Design', passcode: '1234' },
+                { id: 3, name: 'Emily Davis', email: 'emily@company.com', department: 'Marketing', passcode: '1234' }
+            ];
+
+            tasks = [
+                {
+                    id: 1,
+                    title: 'Update User Dashboard',
+                    description: 'Redesign the user dashboard with new components',
+                    assignee: 'Sarah Johnson',
+                    assigneeId: 1,
+                    type: 'Development',
+                    status: 'progress',
+                    deadline: '2024-01-15',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    title: 'Create Marketing Materials',
+                    description: 'Design new brochures and digital assets',
+                    assignee: 'Mike Chen',
+                    assigneeId: 2,
+                    type: 'Design',
+                    status: 'pending',
+                    deadline: '2024-01-20',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 3,
+                    title: 'Social Media Campaign',
+                    description: 'Launch Q1 social media campaign',
+                    assignee: 'Emily Davis',
+                    assigneeId: 3,
+                    type: 'Marketing',
+                    status: 'completed',
+                    deadline: '2024-01-10',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            notifications = [
+                {
+                    id: 1,
+                    message: 'New task assigned: Update User Dashboard',
+                    type: 'task_assigned',
+                    timestamp: new Date().toISOString(),
+                    read: false
+                },
+                {
+                    id: 2,
+                    message: 'Task completed: Social Media Campaign',
+                    type: 'task_completed',
+                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                    read: false
+                }
+            ];
+
+            updateTaskAssigneeOptions();
+        }
+
+        // Employee Profile Functions
+        function updateEmployeeProfile() {
+            if (currentUser && currentUser.role === 'employee') {
+                document.getElementById('employeeProfileName').textContent = currentUser.name;
+                document.getElementById('employeeProfileEmail').textContent = currentUser.email;
+                document.getElementById('employeeProfileDepartment').textContent = currentUser.department;
+                document.getElementById('employeeProfileId').textContent = `#${String(currentUser.id).padStart(3, '0')}`;
+                
+                // Update task statistics for employee
+                const employeeTasks = tasks.filter(t => t.assigneeId === currentUser.id);
+                const completedTasks = employeeTasks.filter(t => t.status === 'completed');
+                const pendingTasks = employeeTasks.filter(t => t.status === 'pending');
+                const progressTasks = employeeTasks.filter(t => t.status === 'progress');
+                
+                document.getElementById('empTotalTasks').textContent = employeeTasks.length;
+                document.getElementById('empCompletedTasks').textContent = completedTasks.length;
+                document.getElementById('empPendingTasks').textContent = pendingTasks.length;
+                document.getElementById('empTransferredTasks').textContent = '0'; // Placeholder
+                document.getElementById('empFailedTasks').textContent = '0'; // Placeholder
+                
+                // Task completion analytics (simplified for demo)
+                document.getElementById('onTimeTasks').textContent = Math.floor(completedTasks.length * 0.7);
+                document.getElementById('extendedTasks').textContent = Math.floor(completedTasks.length * 0.2);
+                document.getElementById('overdueTasks').textContent = Math.floor(completedTasks.length * 0.1);
+            }
+        }
+
+        // Dashboard Functions
+        function updateDashboard() {
+            const totalTasks = tasks.length;
+            const inProgressTasks = tasks.filter(t => t.status === 'progress').length;
+            const completedTasks = tasks.filter(t => t.status === 'completed').length;
+            const totalEmployees = employees.length;
+
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('inProgressTasks').textContent = inProgressTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('totalEmployees').textContent = totalEmployees;
+
+            renderRecentTasks();
+            updateNotificationBadge();
+        }
+
+        function renderRecentTasks() {
+            const recentTasks = tasks.slice(-5).reverse();
+            const container = document.getElementById('recentTasksList');
+            
+            if (recentTasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No tasks yet</p>';
+                return;
+            }
+
+            container.innerHTML = recentTasks.map(task => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg task-status-${task.status}">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-800 dark:text-white">${task.title}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Assigned to: ${task.assignee}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500">Due: ${new Date(task.deadline).toLocaleDateString()}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 text-xs rounded-full ${getStatusBadgeClass(task.status)}">
+                            ${task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusBadgeClass(status) {
+            const classes = {
+                pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+                progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+                completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+            };
+            return classes[status] || '';
+        }
+
+        // Employee Management
+        function showAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').classList.remove('hidden');
+        }
+
+        function hideAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').classList.add('hidden');
+            document.getElementById('employeeName').value = '';
+            document.getElementById('employeeEmail').value = '';
+            document.getElementById('employeeDepartment').value = '';
+        }
+
+        function addEmployee(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('employeeName').value;
+            const email = document.getElementById('employeeEmail').value;
+            const department = document.getElementById('employeeDepartment').value;
+            
+            const newEmployee = {
+                id: employees.length + 1,
+                name: name,
+                email: email,
+                department: department
+            };
+            
+            employees.push(newEmployee);
+            hideAddEmployeeModal();
+            renderEmployees();
+            updateTaskAssigneeOptions();
+            updateDashboard();
+            
+            // Add notification
+            addNotification(`New employee added: ${name}`, 'employee_added');
+        }
+
+        function renderEmployees() {
+            const container = document.getElementById('employeesList');
+            
+            if (employees.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8 col-span-full">No employees yet</p>';
+                return;
+            }
+
+            container.innerHTML = employees.map(employee => `
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm card-hover">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800 dark:text-white">${employee.name}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${employee.email}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500">${employee.department}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">
+                            ${tasks.filter(t => t.assigneeId === employee.id).length} tasks assigned
+                        </span>
+                        <div class="flex space-x-2">
+                            <button onclick="editEmployee(${employee.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <button onclick="removeEmployee(${employee.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editEmployee(employeeId) {
+            const employee = employees.find(e => e.id === employeeId);
+            if (employee) {
+                document.getElementById('editEmployeeId').value = employee.id;
+                document.getElementById('editEmployeeName').value = employee.name;
+                document.getElementById('editEmployeeEmail').value = employee.email;
+                document.getElementById('editEmployeeDepartment').value = employee.department;
+                document.getElementById('editEmployeePasscode').value = '';
+                document.getElementById('editEmployeeModal').classList.remove('hidden');
+            }
+        }
+
+        function hideEditEmployeeModal() {
+            document.getElementById('editEmployeeModal').classList.add('hidden');
+            document.getElementById('editEmployeeId').value = '';
+            document.getElementById('editEmployeeName').value = '';
+            document.getElementById('editEmployeeEmail').value = '';
+            document.getElementById('editEmployeeDepartment').value = '';
+            document.getElementById('editEmployeePasscode').value = '';
+        }
+
+        function updateEmployee(event) {
+            event.preventDefault();
+            
+            const employeeId = parseInt(document.getElementById('editEmployeeId').value);
+            const name = document.getElementById('editEmployeeName').value;
+            const email = document.getElementById('editEmployeeEmail').value;
+            const department = document.getElementById('editEmployeeDepartment').value;
+            const newPasscode = document.getElementById('editEmployeePasscode').value;
+            
+            const employee = employees.find(e => e.id === employeeId);
+            if (employee) {
+                const oldName = employee.name;
+                employee.name = name;
+                employee.email = email;
+                employee.department = department;
+                
+                // Update passcode only if a new one is provided
+                if (newPasscode && newPasscode.length === 4) {
+                    employee.passcode = newPasscode;
+                }
+                
+                // Update tasks that reference this employee
+                tasks.forEach(task => {
+                    if (task.assigneeId === employeeId) {
+                        task.assignee = name;
+                    }
+                });
+                
+                hideEditEmployeeModal();
+                renderEmployees();
+                updateTaskAssigneeOptions();
+                updateEmployeeLoginOptions();
+                renderTasks();
+                updateDashboard();
+                
+                // Add notification
+                addNotification(`Employee updated: ${oldName} → ${name}`, 'employee_updated');
+                
+                // Update current user info if they are the edited employee
+                if (currentUser && currentUser.role === 'employee' && currentUser.id === employeeId) {
+                    currentUser.name = name;
+                    currentUser.email = email;
+                    currentUser.department = department;
+                    document.getElementById('userRole').textContent = `${name} - Employee`;
+                    updateEmployeeProfile();
+                }
+            }
+        }
+
+        function removeEmployee(employeeId) {
+            if (confirm('Are you sure you want to remove this employee?')) {
+                employees = employees.filter(e => e.id !== employeeId);
+                renderEmployees();
+                updateTaskAssigneeOptions();
+                updateEmployeeLoginOptions();
+                updateDashboard();
+            }
+        }
+
+        // Task Management
+        function showAddTaskModal() {
+            document.getElementById('addTaskModal').classList.remove('hidden');
+        }
+
+        function hideAddTaskModal() {
+            document.getElementById('addTaskModal').classList.add('hidden');
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDescription').value = '';
+            document.getElementById('taskAssignee').value = '';
+            document.getElementById('taskType').value = '';
+            document.getElementById('taskDeadline').value = '';
+        }
+
+        function addTask(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+            const assigneeId = parseInt(document.getElementById('taskAssignee').value);
+            const type = document.getElementById('taskType').value;
+            const deadline = document.getElementById('taskDeadline').value;
+            
+            const assignee = employees.find(e => e.id === assigneeId);
+            
+            const newTask = {
+                id: tasks.length + 1,
+                title: title,
+                description: description,
+                assignee: assignee.name,
+                assigneeId: assigneeId,
+                type: type,
+                status: 'pending',
+                deadline: deadline,
+                createdAt: new Date().toISOString()
+            };
+            
+            tasks.push(newTask);
+            hideAddTaskModal();
+            renderTasks();
+            updateDashboard();
+            renderCalendar();
+            
+            // Add notification
+            addNotification(`New task assigned: ${title} to ${assignee.name}`, 'task_assigned');
+        }
+
+        function updateTaskAssigneeOptions() {
+            const select = document.getElementById('taskAssignee');
+            select.innerHTML = '<option value="">Select Employee</option>' + 
+                employees.map(emp => `<option value="${emp.id}">${emp.name}</option>`).join('');
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksList');
+            let tasksToShow = tasks;
+            
+            // Filter tasks for employees
+            if (currentUser && currentUser.role === 'employee') {
+                tasksToShow = tasks.filter(t => t.assigneeId === 1); // Assuming employee ID 1 for demo
+            }
+            
+            if (tasksToShow.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No tasks yet</p>';
+                return;
+            }
+
+            container.innerHTML = tasksToShow.map(task => `
+                <div class="p-6 task-status-${task.status}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800 dark:text-white mb-2">${task.title}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${task.description}</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-500">
+                                <span><i class="fas fa-user mr-1"></i>${task.assignee}</span>
+                                <span><i class="fas fa-tag mr-1"></i>${task.type}</span>
+                                <span><i class="fas fa-calendar mr-1"></i>${new Date(task.deadline).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <select onchange="updateTaskStatus(${task.id}, this.value)" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="progress" ${task.status === 'progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                            ${currentUser && currentUser.role === 'manager' ? `
+                                <button onclick="removeTask(${task.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTaskStatus(taskId, newStatus) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                const oldStatus = task.status;
+                task.status = newStatus;
+                renderTasks();
+                updateDashboard();
+                renderCalendar();
+                
+                // Add notification for status change
+                if (oldStatus !== newStatus) {
+                    addNotification(`Task status updated: ${task.title} is now ${newStatus}`, 'task_updated');
+                }
+            }
+        }
+
+        function removeTask(taskId) {
+            if (confirm('Are you sure you want to remove this task?')) {
+                tasks = tasks.filter(t => t.id !== taskId);
+                renderTasks();
+                updateDashboard();
+                renderCalendar();
+            }
+        }
+
+        function filterTasks() {
+            const filter = document.getElementById('taskFilter').value;
+            const container = document.getElementById('tasksList');
+            
+            let filteredTasks = tasks;
+            if (filter !== 'all') {
+                filteredTasks = tasks.filter(t => t.status === filter);
+            }
+            
+            // Apply employee filter if needed
+            if (currentUser && currentUser.role === 'employee') {
+                filteredTasks = filteredTasks.filter(t => t.assigneeId === 1);
+            }
+            
+            if (filteredTasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No tasks found</p>';
+                return;
+            }
+
+            container.innerHTML = filteredTasks.map(task => `
+                <div class="p-6 task-status-${task.status}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800 dark:text-white mb-2">${task.title}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${task.description}</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-500">
+                                <span><i class="fas fa-user mr-1"></i>${task.assignee}</span>
+                                <span><i class="fas fa-tag mr-1"></i>${task.type}</span>
+                                <span><i class="fas fa-calendar mr-1"></i>${new Date(task.deadline).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <select onchange="updateTaskStatus(${task.id}, this.value)" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="progress" ${task.status === 'progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                            ${currentUser && currentUser.role === 'manager' ? `
+                                <button onclick="removeTask(${task.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterTasksForEmployee() {
+            // This would filter tasks for the current employee
+            // For demo purposes, we'll show all tasks
+        }
+
+        // Calendar Functions
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Update month display
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day border border-gray-200 dark:border-gray-700 p-2';
+                calendarGrid.appendChild(emptyDay);
+            }
+            
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day border border-gray-200 dark:border-gray-700 p-2 cursor-pointer';
+                
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayTasks = tasks.filter(task => task.deadline === dateStr);
+                
+                dayElement.innerHTML = `
+                    <div class="font-medium text-gray-800 dark:text-white mb-1">${day}</div>
+                    <div class="space-y-1">
+                        ${dayTasks.map(task => `
+                            <div class="text-xs p-1 rounded bg-${getTaskColor(task.status)}-100 dark:bg-${getTaskColor(task.status)}-900/30 text-${getTaskColor(task.status)}-800 dark:text-${getTaskColor(task.status)}-400 truncate">
+                                <span class="task-dot ${task.status}"></span>${task.title}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                calendarGrid.appendChild(dayElement);
+            }
+        }
+
+        function getTaskColor(status) {
+            const colors = {
+                pending: 'yellow',
+                progress: 'blue',
+                completed: 'green'
+            };
+            return colors[status] || 'gray';
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        // Notification Functions
+        function addNotification(message, type) {
+            const notification = {
+                id: notifications.length + 1,
+                message: message,
+                type: type,
+                timestamp: new Date().toISOString(),
+                read: false
+            };
+            
+            notifications.unshift(notification);
+            updateNotificationBadge();
+            
+            if (currentView === 'notifications') {
+                renderNotifications();
+            }
+        }
+
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notificationBadge');
+            
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notificationsList');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No notifications yet</p>';
+                return;
+            }
+
+            container.innerHTML = notifications.map(notification => `
+                <div class="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg ${!notification.read ? 'border-l-4 border-primary' : ''}">
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-bell text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-800 dark:text-white">${notification.message}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            ${new Date(notification.timestamp).toLocaleString()}
+                        </p>
+                    </div>
+                    ${!notification.read ? `
+                        <button onclick="markAsRead(${notification.id})" class="text-primary hover:text-primary/80 text-sm">
+                            Mark as read
+                        </button>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function markAsRead(notificationId) {
+            const notification = notifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.read = true;
+                renderNotifications();
+                updateNotificationBadge();
+            }
+        }
+
+        // Initialize the application
+        init();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981545a9c7dc7a1c',t:'MTc1ODI0NDk0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
